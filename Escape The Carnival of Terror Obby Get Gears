@@ -1,0 +1,99 @@
+local LOAD_TIME = tick()
+
+local queueonteleport = queue_on_teleport or queueonteleport
+local setclipboard = toclipboard or setrbxclipboard or setclipboard
+local clonefunction = clonefunc or clonefunction
+local setthreadidentity = set_thread_identity or setthreadcaps or setthreadidentity
+local firetouchinterests = fire_touch_interests or firetouchinterests
+
+if getnamecallmethod then
+    local getnamecallmethod = get_namecall_method or getnamecallmethod
+end
+
+-- // cloneref function for exploits that don't support it
+local a = Instance.new("Part")
+for b, c in pairs(getreg()) do
+    if type(c) == "table" and #c then
+        if rawget(c, "__mode") == "kvs" then
+            for d, e in pairs(c) do
+                if e == a then
+                    getgenv().InstanceList = c
+                    break
+                end
+            end
+        end
+    end
+end
+
+local f = {}
+function f.invalidate(g)
+    if not InstanceList then
+        return
+    end
+    for b, c in pairs(InstanceList) do
+        if c == g then
+            InstanceList[b] = nil
+            return g
+        end
+    end
+end
+
+if not cloneref then
+    getgenv().cloneref = f.invalidate
+end
+
+getrenv().Visit = cloneref(game:GetService("Visit"))
+getrenv().MarketplaceService = cloneref(game:GetService("MarketplaceService"))
+getrenv().HttpRbxApiService = cloneref(game:GetService("HttpRbxApiService"))
+local CoreGui = cloneref(game:GetService("CoreGui"))
+local Players = cloneref(game:GetService("Players"))
+
+task.wait(0.25)
+
+getgenv().stealth_call = function(script)
+    getrenv()._set = clonefunction(setthreadidentity)
+    local old
+    old =
+        hookmetamethod(
+        game,
+        "__index",
+        function(a, b)
+            task.spawn(
+                function()
+                    _set(7)
+                    task.wait(0.1)
+                    pcall(function()
+                        loadstring(script)()
+                    end)
+                    if went then
+                        local check = Instance.new("LocalScript")
+                        check.Parent = Visit
+                    end
+                end
+            )
+            hookmetamethod(game, "__index", old)
+            return old(a, b)
+        end
+    )
+end
+
+local function simulateGamePassPurchase(gamepassIds)
+    for _, gamepassId in ipairs(gamepassIds) do
+        pcall(function()
+            stealth_call(
+                "MarketplaceService:SignalPromptGamePassPurchaseFinished(game.Players.LocalPlayer, " ..
+                    tostring(gamepassId) .. ", true)"
+            )
+        end)
+        task.wait(0.2) -- Delay between each purchase signal
+    end
+end
+
+local gamepassIds = {13982381,13982607,13982622,13982653,13982754,13982771,13982793,13982855,13982876,13982895,13982916,13982956,13982978,13982672,13982936} -- Replace with your specific GamePass IDs
+
+task.spawn(function()
+    simulateGamePassPurchase(gamepassIds)
+    pcall(function()
+        message:Destroy()
+    end)
+end)
